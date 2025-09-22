@@ -3,6 +3,8 @@ title: "Lab 3b - Workspaces, Dates, and Factors"
 author: "Environmental Data Analytics | John Fay and Luana Lima "
 date: "Fall 2025"
 output: pdf_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ## Objectives
@@ -79,9 +81,19 @@ print(filenames)
 ```{r here in action}
 
 # 1. Read the 'NTL-LTER_Lake_ChemistryPhysics_Raw.csv' into a dataframe
-
+Lake.Data<- read.csv(
+  file = here("./Data/Raw/NTL-LTER_Lake_ChemistryPhysics_Raw.csv"),
+  stringsAsFactors = TRUE)  
 
 # 2.
+install.packages("here")
+library(here)
+folder<-here('Data','Raw')
+files <-dir(folder, pattern="EPAair_O3*.*", full.name=TRUE)
+EPAdata <- files %>%
+  map(read.csv) %>% 
+  bind_rows()
+
 library(tidyverse);library(here)
 
 ```
@@ -133,7 +145,7 @@ date_obj_today
 
 #Ex_3 - on your own...
 str_juneteenth <- "19 June 1865"
-#date_juneteenth <- ()
+date_juneteenth <- (str_juneteenth)
 #date_juneteenth
 ```
 ### The century issue
@@ -173,6 +185,7 @@ str_past <- "55-feb-3"
 
 #Alternative 1
 date_obj_past <- fast_strptime(str_past,"%y-%b-%d",cutoff_2000=24L)
+
 date_obj_past
 
 #Alternative 2
@@ -337,7 +350,9 @@ usgs_flow_data$datetime = mdy(usgs_flow_data$datetime)
 usgs_flow_data$month <- month(usgs_flow_data$datetime)
 
 #Convert to a factor, with labels and levels
-
+usgs_flow_data$month<-factor(
+  
+)
 
 #Plot
 
