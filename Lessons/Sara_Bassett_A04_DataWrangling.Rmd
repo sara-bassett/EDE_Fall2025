@@ -1,6 +1,6 @@
 ---
 title: "Assignment 4: Data Wrangling (Fall 2025)"
-author: "Student Name"
+author: "Sara Bassett"
 output: pdf_document
 geometry: margin=2.54cm
 ---
@@ -31,17 +31,48 @@ This exercise accompanies the lessons in Environmental Data Analytics on Data Wr
 
 ```{r setup, message = FALSE}
 #1a 
+library(tidyverse)
+library(lubridate)
+library(here)
+
 
 #1b 
+here()
+getwd()
 
 #1c 
+O318 <- read.csv(file=here
+                 ("Data/Raw/EPAair_O3_NC2018_raw.csv"), stringsAsFactors = TRUE)
+
+O319 <- read.csv(file=here
+                 ("Data/Raw/EPAair_O3_NC2019_raw.csv"), stringsAsFactors = TRUE)
+
+PM18 <- read.csv(file=here
+                 ("./Data/Raw/EPAair_PM25_NC2018_raw.csv"), stringsAsFactors = TRUE)
+
+PM19 <- read.csv(file=here
+                 ("./Data/Raw/EPAair_PM25_NC2019_raw.csv"), stringsAsFactors = TRUE)
+
+O318Raw <- O318
+
+O319Raw <- O319
+
+PM18Raw <- PM18
+
+PM19Raw <- PM19
 
 #2 
+
+dim(O318) #9737 by 20
+dim(O319) #10592 by 20
+dim(PM18) #8981 by 20
+dim(PM19) #8581 by 20
 
 
 ```
 
->All four datasets should have the same number of columns but unique record counts (rows). Do your datasets follow this pattern?
+>All four datasets should have the same number of columns but unique record counts (rows). 
+Do your datasets follow this pattern? Yes.
 
 
 ## Wrangle individual datasets to create processed files.
@@ -56,15 +87,56 @@ This exercise accompanies the lessons in Environmental Data Analytics on Data Wr
 
 ```{r questions 3 thru 4}
 #3
+#formatting for date where m is two digit month, d is two digit day, and Y is four digit year. 
+#Separated by /.
+
+O318$Date <- as.Date(O318$Date, format = '%m/%d/%Y')
+
+O319$Date <- as.Date(O319$Date, format = '%m/%d/%Y')
+
+PM18$Date <- as.Date(PM18$Date, format = '%m/%d/%Y')
+
+PM19$Date <- as.Date(PM19$Date, format = '%m/%d/%Y')
 
 
 #4
+#install.packages("dplyr")
+library(dplyr)
 
+#select some of the rows
+O318 <- select(O318, Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, 
+  COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+
+O319 <- select(O319, Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, 
+  COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+
+PM18 <- select(PM18, Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, 
+  COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
+
+PM19 <- select(PM19, Date, DAILY_AQI_VALUE, Site.Name, AQS_PARAMETER_DESC, 
+  COUNTY, SITE_LATITUDE, SITE_LONGITUDE)
 
 #5
+#fill all cells in column with "PM2.5"
 
+PM18$AQS_PARAMETER_DESC <- "PM2.5"
+
+PM19$AQS_PARAMETER_DESC <- "PM2.5"
 
 #6
+#save as processed
+write.csv(O318, row.names = FALSE, file=
+            "./Data/Processed/EPAair_O3_NC2018_processed.csv")
+  
+write.csv(O319, row.names = FALSE, file=
+            "./Data/Processed/EPAair_O3_NC2019_processed.csv")
+                 
+write.csv(PM18, row.names = FALSE, file=
+            "./Data/Processed/EPAair_PM25_NC2018_processed.csv")
+                 
+write.csv(PM19, row.names = FALSE, file=
+            "./Data/Processed/EPAair_PM25_NC2019_processed.csv")
+
 
 ```
 
@@ -98,18 +170,80 @@ This exercise accompanies the lessons in Environmental Data Analytics on Data Wr
 
 ```{r questions 7 thru 11}
 #7 
+#combine files
+O318Proc <- read.csv(
+  file=here
+  ("./Data/Processed/EPAair_O3_NC2018_processed.csv"))
+  
+O319Proc <- read.csv(
+  file=here
+  ("./Data/Processed/EPAair_O3_NC2019_processed.csv"))
+                 
+PM18Proc <- read.csv(
+  file=here
+  ("./Data/Processed/EPAair_PM25_NC2018_processed.csv"))
 
+PM19Proc <- read.csv(
+  file=here
+  ("./Data/Processed/EPAair_PM25_NC2019_processed.csv"))
+
+Combined <- rbind(O318Proc, O319Proc, PM18Proc, PM19Proc)
 
 #8 
+#filter for specific sites using | as 'or'
 
+combinedfilter<-filter(Combined, Site.Name=="Linville Falls"
+  |Site.Name=="Durham Armory"
+  |Site.Name=="Leggett"
+  |Site.Name=="Hattie Avenue"
+  |Site.Name=="Clemmons Middle"
+  |Site.Name=="Mendenhall School"
+  |Site.Name=="Frying Pan Mountain"
+  |Site.Name=="West Johnston Co."
+  |Site.Name=="Garinger High School"
+  |Site.Name=="Castle Hayne"
+  |Site.Name=="Pitt Agri. Center"
+  |Site.Name=="Bryson City"
+  |Site.Name=="Millbrook School", .preserve=FALSE)
+
+#replace multiple values with mean  
+SiteSummaries <- combinedfilter %>%
+  group_by(Date,Site.Name,AQS_PARAMETER_DESC,COUNTY)%>%
+  summarise(mean(DAILY_AQI_VALUE),
+            mean(SITE_LATITUDE),
+            mean(SITE_LONGITUDE)) 
+  
+#new month and year column from date
+
+SiteSummaries = SiteSummaries%>%
+  mutate(year=lubridate::year(Date))%>%
+  mutate(month=lubridate::month(Date))
+
+#moving columns around
+
+SiteSummaries<-SiteSummaries %>% 
+  relocate(year, .after = Date) %>%
+  relocate(month, .after = Date)
 
 #9
 
+#creating new columns from data
+
+SiteSummaries<- SiteSummaries %>% 
+  rename(Daily_Avg_AQI = 'mean(DAILY_AQI_VALUE)')
+
+SiteSummaries<- pivot_wider(
+  SiteSummaries, names_from = AQS_PARAMETER_DESC, values_from = Daily_Avg_AQI)
 
 #10
 
+dim(SiteSummaries)
+#8976 by 9
 
 #11
+
+write.csv(SiteSummaries, row.names = FALSE, file=
+  ("./Data/Processed/EPAair_O3_PM25_NC1819_Processed.csv"))
 
 
 ```
@@ -125,10 +259,17 @@ This exercise accompanies the lessons in Environmental Data Analytics on Data Wr
 
 #12
 
+SiteSummaries2 <- SiteSummaries %>%
+  group_by(month,year,Site.Name)%>%
+  summarise(mean(PM2.5),
+            mean(Ozone)) %>%
+  drop_na('mean(Ozone)')
 
 #13
 
+dim(SiteSummaries2)
 
+#182 by 5
 
 ```
 
@@ -136,3 +277,4 @@ This exercise accompanies the lessons in Environmental Data Analytics on Data Wr
 
 > Answer: 
 
+na.omit removes any row with 1 or more na values (ie either Ozone or PM2.5) whereas drop_na only removed the rows with na for Ozone.
