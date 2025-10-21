@@ -5,8 +5,6 @@ date: "Fall 2025"
 output: pdf_document
 toc: true
 
-
-
 ---
 
 \listoffigures:
@@ -83,7 +81,6 @@ Customize the chunk options such that the code is run but is not displayed in th
 >
 > -   If your output table spans across two pages, try inserting a page break in the markdown just before your code chunk.
 
-\newpage
 ```{r data.summary, echo=FALSE}
 #Compute mean PM2.5 concentration for each county, sorted by value
 summary_PM25 <- epa_data %>% 
@@ -173,6 +170,9 @@ Add a table of contents and list of figures to your document and knit to a PDF. 
 
 ## Git Repository
 
-I did not use AI on this assignment. I don't like AI. Sara Bassett 
+I did not use AI on this assignment.
+Sara Bassett 
 10/20/25
+
+https://github.com/sara-bassett/EDE_Fall2025.git
 
